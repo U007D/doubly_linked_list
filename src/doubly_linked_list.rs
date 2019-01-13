@@ -50,11 +50,12 @@ impl<T> DoublyLinkedList<T> {
         count
     }
 
-    pub fn push_back(&mut self, node: Node<T>) -> &mut Self {
-        let prev_tail = self.tail.take();
+    pub fn push_back(&mut self, mut node: Node<T>) -> &mut Self {
+        let old_tail = self.tail.take();
+        node.prev = old_tail.clone();
         let node_link = NodeLink::new(node);
         self.tail = Some(node_link.to_weak());
-        match prev_tail {
+        match old_tail {
             Some(prev) => prev.upgrade()
                               // `.expect()` cannot fail in this circumstance because the node being referenced has
                               // a live (strong) reference pointing to it (either the `Node<T>::next` previous to it
@@ -63,6 +64,19 @@ impl<T> DoublyLinkedList<T> {
                               .borrow_mut()
                               .next = Some(node_link),
             None => self.head = Some(node_link),
+        };
+        self
+    }
+
+    pub fn push_front(&mut self, mut node: Node<T>) -> &mut Self {
+        let old_head = self.head.take();
+        node.next = old_head.clone();
+        let node_link = NodeLink::new(node);
+        self.head = Some(node_link.clone());
+        match old_head {
+            Some(head) => head.borrow_mut()
+                              .prev = Some(node_link.to_weak()),
+            None => self.tail = Some(node_link.to_weak()),
         };
         self
     }
