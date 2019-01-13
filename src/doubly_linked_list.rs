@@ -1,3 +1,4 @@
+mod iter;
 #[cfg(test)]
 mod unit_tests;
 use crate::{
@@ -5,7 +6,11 @@ use crate::{
     NodeLink,
     WeakLink,
 };
+pub use self::iter::Iter;
+use std::marker::PhantomData;
 
+/// The current implementation of `DoublyLinkedList` is not thread-safe.  Specifically, `.next` and `.prev` link
+/// manipulations are not synchronized, nor is access to node data provided by `Iter::next`.
 #[derive(Debug)]
 pub struct DoublyLinkedList<T> {
     head: Option<NodeLink<T>>,
@@ -24,6 +29,17 @@ impl<T> DoublyLinkedList<T> {
         self.len() == 0
     }
 
+    pub fn iter(&self) -> Iter<T> {
+        Iter {
+            curr: self.head.clone(),
+            // Since next returns `&T` scoped to `Iter<'a>`, it would be possible for a `Node<T>` to be dropped while
+            // the caller is still holding the `&T`.  Cloning and holding the `Rc` of the iterator's head node
+            // ensures this cannot happen.
+            rc: self.head.clone(),
+            phantom: PhantomData,
+        }
+    }
+
     pub fn len(&self) -> usize {
         let mut count = 0;
         let mut link_opt = self.head.clone();
@@ -35,11 +51,14 @@ impl<T> DoublyLinkedList<T> {
     }
 
     pub fn push_back(&mut self, node: Node<T>) -> &mut Self {
-        let node_link = NodeLink::new(node);
         let prev_tail = self.tail.take();
+        let node_link = NodeLink::new(node);
         self.tail = Some(node_link.to_weak());
         match prev_tail {
             Some(prev) => prev.upgrade()
+                              // `.expect()` cannot fail in this circumstance because the node being referenced has
+                              // a live (strong) reference pointing to it (either the `Node<T>::next` previous to it
+                              // or the `List::head` field, if that node is first in the list).
                               .expect("Internal error: DoublyLinkedList impl is deleting .next before .prev")
                               .borrow_mut()
                               .next = Some(node_link),
