@@ -6,7 +6,7 @@ use crate::{
     Error,
     Node,
     Result,
-    StrongLink,
+    NodeLink,
     WeakLink,
 };
 pub use self::iter::Iter;
@@ -19,7 +19,7 @@ use std::{
 /// manipulations are not synchronized, nor is access to node data provided by `Iter::next`.
 #[derive(Debug)]
 pub struct DoublyLinkedList<'a, T> {
-    head: Option<StrongLink<'a, T>>,
+    head: Option<NodeLink<'a, T>>,
     tail: Option<WeakLink<'a, T>>,
 }
 
@@ -102,7 +102,7 @@ impl<'a, T> DoublyLinkedList<'a, T> {
         let mut node = Node::new(data);
         let old_tail = self.tail.take();
         node.prev = old_tail.clone();
-        let node_link = StrongLink::new(node);
+        let node_link = NodeLink::new(node);
         self.tail = Some(node_link.to_weak());
         match old_tail {
             Some(prev) => prev.to_strong()
@@ -121,7 +121,7 @@ impl<'a, T> DoublyLinkedList<'a, T> {
         let mut node = Node::new(data);
         let old_head = self.head.take();
         node.next = old_head.clone();
-        let node_link = StrongLink::new(node);
+        let node_link = NodeLink::new(node);
         self.head = Some(node_link.clone());
         match old_head {
             Some(head) => head.borrow_mut()

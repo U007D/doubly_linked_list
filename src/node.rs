@@ -15,7 +15,7 @@ use std::{
 
 #[derive(Debug)]
 pub struct Node<'a, T> {
-    pub(super) next: Option<StrongLink<'a, T>>,
+    pub(super) next: Option<NodeLink<'a, T>>,
     pub(super) prev: Option<WeakLink<'a, T>>,
     pub(super) data: T,
 }
@@ -51,9 +51,9 @@ impl<'a, T: PartialOrd> PartialOrd for Node<'a, T> {
 }
 
 #[derive(Debug)]
-pub struct StrongLink<'a, T>(pub(super) Rc<RefCell<Node<'a, T>>>);
+pub struct NodeLink<'a, T>(pub(super) Rc<RefCell<Node<'a, T>>>);
 
-impl<'a, T> StrongLink<'a, T> {
+impl<'a, T> NodeLink<'a, T> {
     #[inline]
     pub(super) fn new(node: Node<'a, T>) -> Self {
         Self(Rc::new(RefCell::new(node)))
@@ -70,13 +70,13 @@ impl<'a, T> StrongLink<'a, T> {
     }
 }
 
-impl<'a, T> Clone for StrongLink<'a, T> {
+impl<'a, T> Clone for NodeLink<'a, T> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
 
-impl<'a, T> Deref for StrongLink<'a, T> {
+impl<'a, T> Deref for NodeLink<'a, T> {
     type Target = Rc<RefCell<Node<'a, T>>>;
 
     fn deref(&self) -> &Self::Target {
@@ -84,7 +84,7 @@ impl<'a, T> Deref for StrongLink<'a, T> {
     }
 }
 
-impl<'a, T: PartialEq> PartialEq for StrongLink<'a, T> {
+impl<'a, T: PartialEq> PartialEq for NodeLink<'a, T> {
     fn eq(&self, rhs: &Self) -> bool {
         self == rhs
     }
@@ -100,8 +100,8 @@ impl<'a, T> WeakLink<'a, T> {
     }
 
     #[inline]
-    pub(super) fn to_strong(&self) -> Option<StrongLink<'a, T>> {
-        Weak::upgrade(&self.0).and_then(|link| Some(StrongLink::from_strong(link)))
+    pub(super) fn to_strong(&self) -> Option<NodeLink<'a, T>> {
+        Weak::upgrade(&self.0).and_then(|link| Some(NodeLink::from_strong(link)))
     }
 }
 

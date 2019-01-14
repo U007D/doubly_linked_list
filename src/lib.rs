@@ -19,9 +19,9 @@ pub use self::{
     error::Error,
     node::{
         Node,
-        StrongLink,
-        WeakLink,
+        NodeLink,
     },
 };
+use self::node::WeakLink;
 use std::result::Result as StdResult;
 pub type Result<T> = StdResult<T, Error>;

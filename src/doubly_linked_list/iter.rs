@@ -1,15 +1,15 @@
 #[cfg(test)]
 mod unit_tests;
 
-use crate::StrongLink;
+use crate::NodeLink;
 use std::marker::PhantomData;
 
 #[derive(Debug)]
 pub struct Iter<'a, T> {
-    pub(super) curr: Option<StrongLink<'a, T>>,
+    pub(super) curr: Option<NodeLink<'a, T>>,
     // TODO: How to make volatile?
     #[allow(unused)]
-    pub(super) rc: Option<StrongLink<'a, T>>,
+    pub(super) rc: Option<NodeLink<'a, T>>,
     pub(super) phantom: PhantomData<&'a T>,
 }
 
