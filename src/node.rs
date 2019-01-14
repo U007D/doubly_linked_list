@@ -5,6 +5,7 @@ use std::{
         RefCell,
     },
     cmp::Ordering,
+    marker::PhantomData,
     ops::Deref,
     rc::{
         Rc,
@@ -13,13 +14,13 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct Node<T> {
-    pub(super) next: Option<NodeLink<T>>,
-    pub(super) prev: Option<WeakLink<T>>,
+pub struct Node<'a, T> {
+    pub(super) next: Option<StrongLink<'a, T>>,
+    pub(super) prev: Option<WeakLink<'a, T>>,
     data: T,
 }
 
-impl<T> Node<T> {
+impl<'a, T> Node<'a, T> {
     pub fn new(data: T) -> Self {
         Self {
             next: None,
@@ -29,7 +30,7 @@ impl<T> Node<T> {
     }
 }
 
-impl<T> Deref for Node<T> {
+impl<'a, T> Deref for Node<'a, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -37,72 +38,82 @@ impl<T> Deref for Node<T> {
     }
 }
 
-impl<T: PartialEq> PartialEq for Node<T> {
+impl<'a, T: PartialEq> PartialEq for Node<'a, T> {
     fn eq(&self, rhs: &Self) -> bool {
         self.data == rhs.data
     }
 }
 
-impl<T: PartialOrd> PartialOrd for Node<T> {
+impl<'a, T: PartialOrd> PartialOrd for Node<'a, T> {
     fn partial_cmp(&self, rhs: &Self) -> Option<Ordering> {
         self.data.partial_cmp(&rhs.data)
     }
 }
 
 #[derive(Debug)]
-pub struct NodeLink<T>(Rc<RefCell<Node<T>>>);
+pub struct StrongLink<'a, T>(pub(super) Rc<RefCell<Node<'a, T>>>);
 
-impl<T> NodeLink<T> {
+impl<'a, T> StrongLink<'a, T> {
     #[inline]
-    pub(super) fn new(node: Node<T>) -> Self {
+    pub(super) fn new(node: Node<'a, T>) -> Self {
         Self(Rc::new(RefCell::new(node)))
     }
 
     #[inline]
-    pub(super) fn to_weak(&self) -> WeakLink<T> {
-        WeakLink(Rc::downgrade(&self.0))
+    pub(super) fn from_strong(link: Rc<RefCell<Node<'a, T>>>) -> Self {
+        Self(link)
+    }
+
+    #[inline]
+    pub(super) fn to_weak(&self) -> WeakLink<'a, T> {
+        WeakLink::from_weak(Rc::downgrade(&self.0))
     }
 }
 
-impl<T> Clone for NodeLink<T> {
+impl<'a, T> Clone for StrongLink<'a, T> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
 
-impl<T> Deref for NodeLink<T> {
-    type Target = Rc<RefCell<Node<T>>>;
+impl<'a, T> Deref for StrongLink<'a, T> {
+    type Target = Rc<RefCell<Node<'a, T>>>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<T: PartialEq> PartialEq for NodeLink<T> {
+impl<'a, T: PartialEq> PartialEq for StrongLink<'a, T> {
     fn eq(&self, rhs: &Self) -> bool {
         self == rhs
     }
 }
 
 #[derive(Debug)]
-pub struct WeakLink<T>(Weak<RefCell<Node<T>>>);
+pub struct WeakLink<'a, T>(Weak<RefCell<Node<'a, T>>>, PhantomData<&'a T>);
 
-impl<T> Clone for WeakLink<T> {
+impl<'a, T> WeakLink<'a, T> {
+    #[inline]
+    pub(super) fn from_weak(weak_link: Weak<RefCell<Node<'a, T>>>) -> Self {
+        Self(weak_link, PhantomData)
+    }
+
+    #[inline]
+    pub(super) fn to_strong(&self) -> Option<StrongLink<'a, T>> {
+        Weak::upgrade(&self.0).and_then(|link| Some(StrongLink::from_strong(link)))
+    }
+}
+
+impl<'a, T> Clone for WeakLink<'a, T> {
     fn clone(&self) -> Self {
-        Self(self.0.clone())
+        Self::from_weak(self.0.clone())
     }
 }
 
-impl<T> Deref for WeakLink<T> {
-    type Target = Weak<RefCell<Node<T>>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<T: PartialEq> PartialEq for WeakLink<T> {
+impl<'a, T: PartialEq> PartialEq for WeakLink<'a, T> {
     fn eq(&self, rhs: &Self) -> bool {
         self == rhs
     }
 }
+

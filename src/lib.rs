@@ -18,7 +18,7 @@ pub use self::{
     error::Error,
     node::{
         Node,
-        NodeLink,
+        StrongLink,
+        WeakLink,
     },
 };
-use self::node::WeakLink;
