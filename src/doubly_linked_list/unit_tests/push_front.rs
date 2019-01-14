@@ -1,3 +1,4 @@
+#![allow(clippy::option_unwrap_used)]
 use crate::DoublyLinkedList;
 
 #[test]
@@ -38,8 +39,8 @@ fn push_front_on_a_list_with_one_node_yields_a_list_of_expected_length_and_order
 
     // and the nodes yield data in the order they were inserted
     let mut iter = list.iter();
-    assert_eq!(iter.next(), Some(&sample_data_2));
-    assert_eq!(iter.next(), Some(&sample_data_1));
+    assert_eq!(**iter.next().unwrap().borrow(), sample_data_2);
+    assert_eq!(**iter.next().unwrap().borrow(), sample_data_1);
 
     // and after reading the expected nodes, there are no more nodes
     assert_eq!(iter.next(), None);
@@ -64,8 +65,8 @@ fn push_front_on_a_list_with_one_node_in_a_different_order_yields_a_list_of_expe
 
     // and the nodes yield data in the order they were inserted
     let mut iter = list.iter();
-    assert_eq!(iter.next(), Some(&sample_data_1));
-    assert_eq!(iter.next(), Some(&sample_data_2));
+    assert_eq!(**iter.next().unwrap().borrow(), sample_data_1);
+    assert_eq!(**iter.next().unwrap().borrow(), sample_data_2);
 
     // and after reading the expected nodes, there are no more nodes
     assert_eq!(iter.next(), None);

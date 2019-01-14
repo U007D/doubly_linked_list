@@ -3,11 +3,7 @@ use super::*;
 #[test]
 fn iter_from_empty_list_returns_expected_iterator() {
     // given an iterator over an empty list
-    let expected_result = Iter {
-        curr: None,
-        rc: None,
-        phantom: PhantomData
-    };
+    let expected_result = Iter(None);
     let list = DoublyLinkedList::<String>::new();
 
     // when .iter() is called

@@ -1,32 +1,31 @@
 #[cfg(test)]
 mod unit_tests;
-
-use crate::NodeLink;
-use std::marker::PhantomData;
+use crate::{
+    Node,
+    NodeLink,
+};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+};
 
 #[derive(Debug)]
-pub struct Iter<'a, T> {
-    pub(super) curr: Option<NodeLink<'a, T>>,
-    // TODO: How to make volatile?
-    #[allow(unused)]
-    pub(super) rc: Option<NodeLink<'a, T>>,
-    pub(super) phantom: PhantomData<&'a T>,
-}
+pub struct Iter<'a, T>(pub(super) Option<NodeLink<'a, T>>);
 
 impl<'a, T> Iterator for Iter<'a, T> {
-    type Item = &'a T;
+    type Item = Rc<RefCell<Node<'a, T>>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.curr.take().and_then(|el_ref| {
-            self.curr = el_ref.borrow().next.clone();
-            unsafe { ((&**el_ref.borrow()) as *const T).as_ref() }
-        })
+        self.0.take()
+              .and_then(|link| {
+                  self.0 = link.borrow().next.clone();
+                  Some(link.0)
+              })
     }
 }
 
 impl<'a, T: PartialEq> PartialEq for Iter<'a, T> {
     fn eq(&self, rhs: &Self) -> bool {
-        self.curr == rhs.curr &&
-            self.rc == rhs.rc
+        self.0 == rhs.0
     }
 }

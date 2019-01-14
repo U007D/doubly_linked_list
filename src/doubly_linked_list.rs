@@ -10,10 +10,7 @@ use crate::{
     WeakLink,
 };
 pub use self::iter::Iter;
-use std::{
-    marker::PhantomData,
-    rc::Rc,
-};
+use std::rc::Rc;
 
 /// The current implementation of `DoublyLinkedList` is not thread-safe.  Specifically, `.next` and `.prev` link
 /// manipulations are not synchronized, nor is access to node data provided by `Iter::next`.
@@ -36,14 +33,7 @@ impl<'a, T> DoublyLinkedList<'a, T> {
     }
 
     pub fn iter(&self) -> Iter<'a, T> {
-        Iter {
-            curr: self.head.clone(),
-            // Since next returns `&T` scoped to `Iter<'a>`, it would be possible for a `Node<'a, T>` to be dropped while
-            // the caller is still holding the `&T`.  Cloning and holding the `Rc` of the iterator's head node
-            // ensures this cannot happen.
-            rc: self.head.clone(),
-            phantom: PhantomData,
-        }
+        Iter(self.head.clone())
     }
 
     pub fn len(&self) -> usize {
