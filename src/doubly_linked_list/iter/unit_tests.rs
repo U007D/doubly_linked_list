@@ -1,7 +1,4 @@
-use crate::{
-    DoublyLinkedList,
-    Node,
-};
+use crate::DoublyLinkedList;
 
 #[test]
 fn iter_from_empty_list_returns_iterator_yielding_none() {
@@ -21,7 +18,7 @@ fn iter_from_non_empty_list_returns_iterator_yielding_some_t() {
     // given an iterator over a non-empty list
     let expected_data = String::from("Hello");
     let mut list = DoublyLinkedList::<String>::new();
-    list.push_back(Node::new(expected_data.clone()));
+    list.push_back(expected_data.clone());
     let mut sut = list.iter();
 
     // when the iterator is called once

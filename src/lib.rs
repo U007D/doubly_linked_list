@@ -10,6 +10,7 @@
         clippy::maybe_infinite_iter, clippy::option_unwrap_used, clippy::result_unwrap_used)]
 // ^^^ End of safety-critical lint section ^^^
 #![allow(clippy::match_bool,)]
+mod consts;
 mod error;
 mod node;
 mod doubly_linked_list;
@@ -22,3 +23,5 @@ pub use self::{
         WeakLink,
     },
 };
+use std::result::Result as StdResult;
+pub type Result<T> = StdResult<T, Error>;

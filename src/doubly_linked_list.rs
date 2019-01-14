@@ -2,7 +2,9 @@ mod iter;
 #[cfg(test)]
 mod unit_tests;
 use crate::{
+    Error,
     Node,
+    Result,
     StrongLink,
     WeakLink,
 };
@@ -53,7 +55,8 @@ impl<'a, T> DoublyLinkedList<'a, T> {
         count
     }
 
-    pub fn push_back(&mut self, mut node: Node<'a, T>) -> &mut Self {
+    pub fn push_back(&mut self, data: T) -> &mut Self {
+        let mut node = Node::new(data);
         let old_tail = self.tail.take();
         node.prev = old_tail.clone();
         let node_link = StrongLink::new(node);
@@ -71,22 +74,25 @@ impl<'a, T> DoublyLinkedList<'a, T> {
         self
     }
 
-    pub fn pop_front(&mut self) -> Option<Node<'a, T>> {
-        self.head.take().and_then(|link| {
-            self.head = link.borrow()
-                            .next
-                            .clone()
-                            .or_else(|| {
-                                self.tail = None;
-                                None
-                            });
-            Some(Rc::try_unwrap(link.0).ok()
-                                       .expect("Internal error: popped `NodeLink` had multiple referrers.")
-                                       .into_inner())
-        })
+    pub fn pop_front(&mut self) -> Result<T> {
+        self.head
+            .take()
+            .ok_or(Error::EmptyList)
+            .and_then(|link| {
+                self.head = link.borrow()
+                                .next
+                                .clone()
+                                .or_else(|| {
+                                    self.tail = None;
+                                    None
+                                });
+                Rc::try_unwrap(link.0).and_then(|ref_cell| Ok(ref_cell.into_inner().data))
+                                      .or_else(|rc| Err(Error::ExistingLiveReferences(Rc::strong_count(&rc))))
+            })
     }
 
-    pub fn push_front(&mut self, mut node: Node<'a, T>) -> &mut Self {
+    pub fn push_front(&mut self, data: T) -> &mut Self {
+        let mut node = Node::new(data);
         let old_head = self.head.take();
         node.next = old_head.clone();
         let node_link = StrongLink::new(node);

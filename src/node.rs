@@ -17,7 +17,7 @@ use std::{
 pub struct Node<'a, T> {
     pub(super) next: Option<StrongLink<'a, T>>,
     pub(super) prev: Option<WeakLink<'a, T>>,
-    data: T,
+    pub(super) data: T,
 }
 
 impl<'a, T> Node<'a, T> {
