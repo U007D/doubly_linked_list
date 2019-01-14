@@ -1,5 +1,6 @@
 use super::*;
 mod default;
+mod insert_before;
 mod iter;
 mod new;
 mod push_back;

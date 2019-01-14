@@ -32,6 +32,48 @@ impl<'a, T> DoublyLinkedList<'a, T> {
         self.len() == 0
     }
 
+    pub fn insert_before(&mut self, curr: NodeLink<'a, T>, data: T) -> &mut Self {
+        curr.borrow_mut().prev.take()
+            .or_else(|| {
+            self.push_front(data);
+            None
+        })
+            .and_then(|weak| {
+                let old_prev = weak.to_strong().expect(msg::ERR_INTERNAL_WEAK_UPGRADE_RACE);
+                let new_prev = NodeLink::new(Node::new(data));
+                // update current node's previous ref
+                curr.borrow_mut().prev = Some(new_prev.to_weak());
+
+                // update new previous node's previous and next refs
+                new_prev.borrow_mut().prev = Some(old_prev.to_weak());
+                new_prev.borrow_mut().next = old_prev.borrow().next.clone();
+
+                // update old previous node's next ref
+                old_prev.borrow_mut().next = Some(new_prev);
+
+                Option::<WeakLink<'a, T>>::None
+        });
+
+//        curr.borrow().prev
+//            .or_else(|| {
+//                self.push_front(data);
+//                None
+//            })
+//            .and_then(|weak| {
+//                let curr_prev = weak.to_strong()
+//                                    .expect(msg::ERR_INTERNAL_WEAK_UPGRADE_RACE);
+//                let mut new_prev = Node::new(data);
+//                new_prev.prev = Some(weak.clone());
+//                new_prev.next = curr_prev.borrow().next.clone();
+//                let link = NodeLink::new(new_prev);
+//                let new_weak = link.to_weak();
+//                curr_prev.borrow_mut().next = Some(link);
+//                curr.borrow_mut().prev = Some(new_weak);
+//                None
+//            });
+        self
+    }
+
     pub fn iter(&self) -> Iter<'a, T> {
         Iter(self.head.clone())
     }

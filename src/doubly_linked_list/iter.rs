@@ -1,25 +1,18 @@
 #[cfg(test)]
 mod unit_tests;
-use crate::{
-    Node,
-    NodeLink,
-};
-use std::{
-    cell::RefCell,
-    rc::Rc,
-};
+use crate::NodeLink;
 
 #[derive(Debug)]
 pub struct Iter<'a, T>(pub(super) Option<NodeLink<'a, T>>);
 
 impl<'a, T> Iterator for Iter<'a, T> {
-    type Item = Rc<RefCell<Node<'a, T>>>;
+    type Item = NodeLink<'a, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.take()
               .and_then(|link| {
                   self.0 = link.borrow().next.clone();
-                  Some(link.0)
+                  Some(link)
               })
     }
 }
