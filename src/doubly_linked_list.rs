@@ -2,6 +2,7 @@ mod iter;
 #[cfg(test)]
 mod unit_tests;
 use crate::{
+    consts::*,
     Error,
     Node,
     Result,
@@ -55,23 +56,29 @@ impl<'a, T> DoublyLinkedList<'a, T> {
         count
     }
 
-    pub fn push_back(&mut self, data: T) -> &mut Self {
-        let mut node = Node::new(data);
-        let old_tail = self.tail.take();
-        node.prev = old_tail.clone();
-        let node_link = StrongLink::new(node);
-        self.tail = Some(node_link.to_weak());
-        match old_tail {
-            Some(prev) => prev.to_strong()
-                // `.expect()` cannot fail in this circumstance because the node being referenced has
-                // a live (strong) reference pointing to it (either the `Node<'a, T>::next` previous to it
-                // or the `List::head` field, if that node is first in the list).
-                              .expect("Internal error: DoublyLinkedList impl is deleting .next before .prev")
-                              .borrow_mut()
-                              .next = Some(node_link),
-            None => self.head = Some(node_link),
-        };
-        self
+    pub fn pop_back(&mut self) -> Result<T> {
+        self.tail
+            .take()
+            .ok_or(Error::EmptyList)
+            .and_then(|weak| {
+                let old_tail = weak.to_strong()
+                                   .expect(msg::ERR_INTERNAL_WEAK_UPGRADE_RACE);
+                self.tail = old_tail.borrow()
+                                    .prev
+                                    .clone()
+                                    .and_then(|weak| {
+                                        let new_tail = weak.to_strong()
+                                                           .expect(msg::ERR_INTERNAL_WEAK_UPGRADE_RACE);
+                                        new_tail.borrow_mut().next = None;
+                                        Some(new_tail.to_weak())
+                                    })
+                                    .or_else(|| {
+                                        self.head = None;
+                                        None
+                                    });
+                Rc::try_unwrap(old_tail.0).and_then(|ref_cell| Ok(ref_cell.into_inner().data))
+                                          .or_else(|rc| Err(Error::ExistingLiveReferences(Rc::strong_count(&rc))))
+            })
     }
 
     pub fn pop_front(&mut self) -> Result<T> {
@@ -89,6 +96,25 @@ impl<'a, T> DoublyLinkedList<'a, T> {
                 Rc::try_unwrap(link.0).and_then(|ref_cell| Ok(ref_cell.into_inner().data))
                                       .or_else(|rc| Err(Error::ExistingLiveReferences(Rc::strong_count(&rc))))
             })
+    }
+
+    pub fn push_back(&mut self, data: T) -> &mut Self {
+        let mut node = Node::new(data);
+        let old_tail = self.tail.take();
+        node.prev = old_tail.clone();
+        let node_link = StrongLink::new(node);
+        self.tail = Some(node_link.to_weak());
+        match old_tail {
+            Some(prev) => prev.to_strong()
+                // `.expect()` cannot fail in this circumstance because the node being referenced has
+                // a live (strong) reference pointing to it (either the `Node<'a, T>::next` previous to it
+                // or the `List::head` field, if that node is first in the list).
+                              .expect("Internal error: DoublyLinkedList impl is deleting .next before .prev")
+                              .borrow_mut()
+                              .next = Some(node_link),
+            None => self.head = Some(node_link),
+        };
+        self
     }
 
     pub fn push_front(&mut self, data: T) -> &mut Self {

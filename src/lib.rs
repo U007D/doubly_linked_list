@@ -1,7 +1,7 @@
 #![warn(clippy::all)]
 #![allow(unsafe_code)] // Do not remove!  Explicitly change to #![allow(unsafe_code)] to use `unsafe` keyword.
-//#![forbid(warnings)]
 #![forbid(overflowing_literals)]
+#![deny(warnings)]
 // Uncomment before ship to reconcile use of possibly redundant crates and uncover possible debug remnants
 //#![warn(clippy::multiple_crate_versions, clippy::print_stdout, clippy::unimplemented, clippy::use_debug)]
 // vvv Safety-critical application lints (pedantic: use for safety-critical applications only) vvv
