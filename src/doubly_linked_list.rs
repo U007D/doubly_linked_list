@@ -12,8 +12,6 @@ use crate::{
 pub use self::iter::Iter;
 use std::rc::Rc;
 
-/// The current implementation of `DoublyLinkedList` is not thread-safe.  Specifically, `.next` and `.prev` link
-/// manipulations are not synchronized, nor is access to node data provided by `Iter::next`.
 #[derive(Debug)]
 pub struct DoublyLinkedList<'a, T> {
     head: Option<NodeLink<'a, T>>,
@@ -143,10 +141,7 @@ impl<'a, T> DoublyLinkedList<'a, T> {
         self.tail = Some(node_link.to_weak());
         match old_tail {
             Some(prev) => prev.to_strong()
-                // `.expect()` cannot fail in this circumstance because the node being referenced has
-                // a live (strong) reference pointing to it (either the `Node<'a, T>::next` previous to it
-                // or the `List::head` field, if that node is first in the list).
-                              .expect("Internal error: DoublyLinkedList impl is deleting .next before .prev")
+                              .expect(msg::ERR_INTERNAL_WEAK_UPGRADE_RACE)
                               .borrow_mut()
                               .next = Some(node_link),
             None => self.head = Some(node_link),
