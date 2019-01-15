@@ -12,6 +12,8 @@ use crate::{
 pub use self::iter::Iter;
 use std::rc::Rc;
 
+/// `DoublyLinkedList` represents a series of `Node`s, provides appropriate data insertion and removal methods, and
+/// an permits iterating over the collection.
 #[derive(Debug)]
 pub struct DoublyLinkedList<'a, T> {
     head: Option<NodeLink<'a, T>>,
@@ -19,6 +21,7 @@ pub struct DoublyLinkedList<'a, T> {
 }
 
 impl<'a, T> DoublyLinkedList<'a, T> {
+    /// Constructor.
     pub fn new() -> Self {
         Self {
             head: None,
@@ -26,14 +29,20 @@ impl<'a, T> DoublyLinkedList<'a, T> {
         }
     }
 
+    /// Predicate revealing whether the list is empty (contains no `Node`s) or not.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    /// Inserts `data` as a `Node` into the list positionally after the `Node` referenced by `curr`.  If `curr`
+    /// represents the tail of the list, this method delegates to `push_back()`, instead, so that the
+    /// `DoublyLinkedList`'s `tail` field is properly maintained.
     pub fn insert_after(&mut self, curr: NodeLink<'a, T>, data: T) -> &mut Self {
         let old_next_opt = curr.borrow_mut().next.take();
         match old_next_opt {
+            // If `curr` is the last node in the list, delegate insertion operation to `push_back()`
             None => self.push_back(data),
+            // Otherwise,
             Some(old_next) => {
                 let new_next = NodeLink::new(Node::new(data));
 
@@ -54,10 +63,15 @@ impl<'a, T> DoublyLinkedList<'a, T> {
         }
     }
 
+    /// Inserts `data` as a `Node` into the list positionally before the `Node` referenced by `curr`.  If `curr`
+    /// represents the head of the list, this method delegates to `push_front()`, instead, so that the
+    /// `DoublyLinkedList`'s `head` field is properly maintained.
     pub fn insert_before(&mut self, curr: NodeLink<'a, T>, data: T) -> &mut Self {
         let old_prev_opt = curr.borrow_mut().prev.take();
         match old_prev_opt {
+            // If `curr` is the first node in the list, delegate insertion operation to `push_front()`
             None => self.push_front(data),
+            // Otherwise,
             Some(weak) => {
                 let old_prev = weak.to_strong().expect(msg::ERR_INTERNAL_WEAK_UPGRADE_RACE);
                 let new_prev = NodeLink::new(Node::new(data));
@@ -77,10 +91,14 @@ impl<'a, T> DoublyLinkedList<'a, T> {
         }
     }
 
+    /// Creates an `Iterator` permitting iteration over the collection.
     pub fn iter(&self) -> Iter<'a, T> {
         Iter(self.head.clone())
     }
 
+    /// Returns the number of `Node`s currently in the list.  Note: this method does not check for the case where the
+    /// number of `Nodes` > usize::MAX.  In such a case, this method will panic in debug and silently wrap in release
+    /// (Rust/C++/C default behavior).
     pub fn len(&self) -> usize {
         let mut count = 0;
         let mut link_opt = self.head.clone();
@@ -91,31 +109,47 @@ impl<'a, T> DoublyLinkedList<'a, T> {
         count
     }
 
+    /// Removes the `Node` at the tail of the list and returns the `data` contained within.
+    /// Note: Because of the way `RefCell` works, this will return an error if there is another live reference (e.g.
+    /// caller also called `.iter()` and is holding a live `.borrow()`) to this and/or either of its adjacent (i.e.
+    /// previous or next) `Node`s when calling this method.
     pub fn pop_back(&mut self) -> Result<T> {
         self.tail
             .take()
+            // If tail contained `None`, then the list is empty
             .ok_or(Error::EmptyList)
+            // Otherwise,
             .and_then(|weak| {
                 let old_tail = weak.to_strong()
                                    .expect(msg::ERR_INTERNAL_WEAK_UPGRADE_RACE);
+                // Set tail to point to extracted `Node`'s predecessor
                 self.tail = old_tail.borrow()
                                     .prev
                                     .clone()
+                                    // If there was no predecessor, this was the only Node in the list.  After
+                                    // extraction, the list will be empty
+                                    .or_else(|| {
+                                        self.head = None;
+                                        None
+                                    })
+                                    // Otherwise, a predecessor exists.  Set it to be the new end-of-list `Node`
                                     .and_then(|weak| {
                                         let new_tail = weak.to_strong()
                                                            .expect(msg::ERR_INTERNAL_WEAK_UPGRADE_RACE);
                                         new_tail.borrow_mut().next = None;
                                         Some(new_tail.to_weak())
-                                    })
-                                    .or_else(|| {
-                                        self.head = None;
-                                        None
                                     });
+                // Extract data from extracted `Node`.  If the extracted `Node` has outstanding live references, the
+                // runtime `borrowck` will (correctly) prevent extraction and this method will return an error
                 Rc::try_unwrap(old_tail.0).and_then(|ref_cell| Ok(ref_cell.into_inner().data))
                                           .or_else(|rc| Err(Error::ExistingLiveReferences(Rc::strong_count(&rc))))
             })
     }
 
+    /// Removes the `Node` at the head of the list and returns the `data` contained within.
+    /// Note: Because of the way `RefCell` works, this will return an error if there is another live reference (e.g.
+    /// caller also called `.iter()` and is holding a live `.borrow()`) to this and/or either of its adjacent (i.e.
+    /// previous or next) `Node`s when calling this method.
     pub fn pop_front(&mut self) -> Result<T> {
         self.head
             .take()
@@ -133,6 +167,7 @@ impl<'a, T> DoublyLinkedList<'a, T> {
             })
     }
 
+    /// Appends a `Node` to the end of the list.
     pub fn push_back(&mut self, data: T) -> &mut Self {
         let mut node = Node::new(data);
         let old_tail = self.tail.take();
@@ -149,6 +184,7 @@ impl<'a, T> DoublyLinkedList<'a, T> {
         self
     }
 
+    /// Prepends a `Node` to the front of the list.
     pub fn push_front(&mut self, data: T) -> &mut Self {
         let mut node = Node::new(data);
         let old_head = self.head.take();
@@ -164,15 +200,20 @@ impl<'a, T> DoublyLinkedList<'a, T> {
     }
 }
 
+/// Idiomatic `Default` impl for types with parameterless constructors.
 impl<'a, T> Default for DoublyLinkedList<'a, T> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<'a, T: PartialEq> PartialEq for DoublyLinkedList<'a, T> {
+/// Implementation of partial equality for `DoublyLinkedList`
+impl<'a, T> PartialEq for DoublyLinkedList<'a, T> {
     fn eq(&self, rhs: &Self) -> bool {
         self.head == rhs.head &&
         self.tail == rhs.tail
     }
 }
+
+/// Impl of total equality (marker trait) for `DoublyLinkedList`
+impl<'a, T> Eq for DoublyLinkedList<'a, T> {}
