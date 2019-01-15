@@ -32,6 +32,30 @@ impl<'a, T> DoublyLinkedList<'a, T> {
         self.len() == 0
     }
 
+    pub fn insert_after(&mut self, curr: NodeLink<'a, T>, data: T) -> &mut Self {
+        let old_next_opt = curr.borrow_mut().next.take();
+        match old_next_opt {
+            None => self.push_back(data),
+            Some(old_next) => {
+                let new_next = NodeLink::new(Node::new(data));
+
+                // update new next node's previous ref
+                new_next.borrow_mut().prev = old_next.borrow().prev.clone();
+
+                // update old next node's prev ref
+                old_next.borrow_mut().prev = Some(new_next.to_weak());
+
+                // update new next node's next ref
+                new_next.borrow_mut().next = Some(old_next);
+
+                // update current node's next ref
+                curr.borrow_mut().next = Some(new_next);
+
+                self
+            }
+        }
+    }
+
     pub fn insert_before(&mut self, curr: NodeLink<'a, T>, data: T) -> &mut Self {
         let old_prev_opt = curr.borrow_mut().prev.take();
         match old_prev_opt {
