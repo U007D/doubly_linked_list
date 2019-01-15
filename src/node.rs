@@ -1,16 +1,14 @@
+mod node_link;
+mod weak_link;
 #[cfg(test)]
 mod unit_tests;
+pub use self::{
+    node_link::NodeLink,
+    weak_link::WeakLink,
+};
 use std::{
-    cell::{
-        RefCell,
-    },
     cmp::Ordering,
-    marker::PhantomData,
     ops::Deref,
-    rc::{
-        Rc,
-        Weak,
-    },
 };
 
 #[derive(Debug)]
@@ -49,71 +47,3 @@ impl<'a, T: PartialOrd> PartialOrd for Node<'a, T> {
         self.data.partial_cmp(&rhs.data)
     }
 }
-
-#[derive(Debug)]
-pub struct NodeLink<'a, T>(pub(super) Rc<RefCell<Node<'a, T>>>);
-
-impl<'a, T> NodeLink<'a, T> {
-    #[inline]
-    pub(super) fn new(node: Node<'a, T>) -> Self {
-        Self(Rc::new(RefCell::new(node)))
-    }
-
-    #[inline]
-    pub(super) fn from_strong(link: Rc<RefCell<Node<'a, T>>>) -> Self {
-        Self(link)
-    }
-
-    #[inline]
-    pub(super) fn to_weak(&self) -> WeakLink<'a, T> {
-        WeakLink::from_weak(Rc::downgrade(&self.0))
-    }
-}
-
-impl<'a, T> Clone for NodeLink<'a, T> {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
-    }
-}
-
-impl<'a, T> Deref for NodeLink<'a, T> {
-    type Target = Rc<RefCell<Node<'a, T>>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<'a, T: PartialEq> PartialEq for NodeLink<'a, T> {
-    fn eq(&self, rhs: &Self) -> bool {
-        self == rhs
-    }
-}
-
-#[derive(Debug)]
-pub struct WeakLink<'a, T>(Weak<RefCell<Node<'a, T>>>, PhantomData<&'a T>);
-
-impl<'a, T> WeakLink<'a, T> {
-    #[inline]
-    pub(super) fn from_weak(weak_link: Weak<RefCell<Node<'a, T>>>) -> Self {
-        Self(weak_link, PhantomData)
-    }
-
-    #[inline]
-    pub(super) fn to_strong(&self) -> Option<NodeLink<'a, T>> {
-        Weak::upgrade(&self.0).and_then(|link| Some(NodeLink::from_strong(link)))
-    }
-}
-
-impl<'a, T> Clone for WeakLink<'a, T> {
-    fn clone(&self) -> Self {
-        Self::from_weak(self.0.clone())
-    }
-}
-
-impl<'a, T: PartialEq> PartialEq for WeakLink<'a, T> {
-    fn eq(&self, rhs: &Self) -> bool {
-        self == rhs
-    }
-}
-
