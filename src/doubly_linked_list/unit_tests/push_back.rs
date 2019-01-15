@@ -26,7 +26,7 @@ fn push_back_on_a_list_with_one_node_yields_a_list_of_expected_length_and_order(
     list.push_back(sample_data_1.clone());
 
     // when push_back() is called
-    let _ = list.push_back(sample_data_2.clone());
+    list.push_back(sample_data_2.clone());
 
     // then the list does not report empty
     assert_eq!(list.is_empty(), false);
@@ -52,7 +52,7 @@ fn push_back_on_a_list_with_one_node_in_a_different_order_yields_a_list_of_expec
     list.push_back(sample_data_2.clone());
 
     // when push_back() is called
-    let _ = list.push_back(sample_data_1.clone());
+    list.push_back(sample_data_1.clone());
 
     // then the list does not report empty
     assert_eq!(list.is_empty(), false);

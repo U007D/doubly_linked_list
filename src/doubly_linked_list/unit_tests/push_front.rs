@@ -28,7 +28,7 @@ fn push_front_on_a_list_with_one_node_yields_a_list_of_expected_length_and_order
     assert_eq!(list.len(), 1);
 
     // when push_front() is called
-    let _ = list.push_front(sample_data_2.clone());
+    list.push_front(sample_data_2.clone());
     assert_eq!(list.len(), 2);
 
     // then the list does not report empty
