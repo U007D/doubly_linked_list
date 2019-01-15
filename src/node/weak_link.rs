@@ -1,6 +1,5 @@
 use std::{
     cell::RefCell,
-    marker::PhantomData,
     rc::Weak,
 };
 use crate::{
@@ -9,27 +8,27 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct WeakLink<'a, T>(Weak<RefCell<Node<'a, T>>>, PhantomData<&'a T>);
+pub struct WeakLink<T>(Weak<RefCell<Node<T>>>);
 
-impl<'a, T> WeakLink<'a, T> {
+impl<T> WeakLink<T> {
     #[inline]
-    pub(crate) fn from_weak(weak_link: Weak<RefCell<Node<'a, T>>>) -> Self {
-        Self(weak_link, PhantomData)
+    pub(crate) fn from_weak(weak_link: Weak<RefCell<Node<T>>>) -> Self {
+        Self(weak_link)
     }
 
     #[inline]
-    pub(crate) fn to_strong(&self) -> Option<NodeLink<'a, T>> {
+    pub(crate) fn to_strong(&self) -> Option<NodeLink<T>> {
         Weak::upgrade(&self.0).and_then(|link| Some(NodeLink::from_strong(link)))
     }
 }
 
-impl<'a, T> Clone for WeakLink<'a, T> {
+impl<T> Clone for WeakLink<T> {
     fn clone(&self) -> Self {
         Self::from_weak(self.0.clone())
     }
 }
 
-impl<'a, T: PartialEq> PartialEq for WeakLink<'a, T> {
+impl<T: PartialEq> PartialEq for WeakLink<T> {
     fn eq(&self, rhs: &Self) -> bool {
         self == rhs
     }

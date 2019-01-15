@@ -15,12 +15,12 @@ use std::rc::Rc;
 /// `DoublyLinkedList` represents a series of `Node`s, provides appropriate data insertion and removal methods, and
 /// an permits iterating over the collection.
 #[derive(Debug)]
-pub struct DoublyLinkedList<'a, T> {
-    head: Option<NodeLink<'a, T>>,
-    tail: Option<WeakLink<'a, T>>,
+pub struct DoublyLinkedList<T> {
+    head: Option<NodeLink<T>>,
+    tail: Option<WeakLink<T>>,
 }
 
-impl<'a, T> DoublyLinkedList<'a, T> {
+impl<T> DoublyLinkedList<T> {
     /// Constructor.
     pub fn new() -> Self {
         Self {
@@ -37,12 +37,10 @@ impl<'a, T> DoublyLinkedList<'a, T> {
     /// Inserts `data` as a `Node` into the list positionally after the `Node` referenced by `curr`.  If `curr`
     /// represents the tail of the list, this method delegates to `push_back()`, instead, so that the
     /// `DoublyLinkedList`'s `tail` field is properly maintained.
-    pub fn insert_after(&mut self, curr: NodeLink<'a, T>, data: T) -> &mut Self {
+    pub fn insert_after(&mut self, curr: NodeLink<T>, data: T) -> &mut Self {
         let old_next_opt = curr.borrow_mut().next.take();
         match old_next_opt {
-            // If `curr` is the last node in the list, delegate insertion operation to `push_back()`
             None => self.push_back(data),
-            // Otherwise,
             Some(old_next) => {
                 let new_next = NodeLink::new(Node::new(data));
 
@@ -66,12 +64,10 @@ impl<'a, T> DoublyLinkedList<'a, T> {
     /// Inserts `data` as a `Node` into the list positionally before the `Node` referenced by `curr`.  If `curr`
     /// represents the head of the list, this method delegates to `push_front()`, instead, so that the
     /// `DoublyLinkedList`'s `head` field is properly maintained.
-    pub fn insert_before(&mut self, curr: NodeLink<'a, T>, data: T) -> &mut Self {
+    pub fn insert_before(&mut self, curr: NodeLink<T>, data: T) -> &mut Self {
         let old_prev_opt = curr.borrow_mut().prev.take();
         match old_prev_opt {
-            // If `curr` is the first node in the list, delegate insertion operation to `push_front()`
             None => self.push_front(data),
-            // Otherwise,
             Some(weak) => {
                 let old_prev = weak.to_strong().expect(msg::ERR_INTERNAL_WEAK_UPGRADE_RACE);
                 let new_prev = NodeLink::new(Node::new(data));
@@ -92,7 +88,7 @@ impl<'a, T> DoublyLinkedList<'a, T> {
     }
 
     /// Creates an `Iterator` permitting iteration over the collection.
-    pub fn iter(&self) -> Iter<'a, T> {
+    pub fn iter(&self) -> Iter<T> {
         Iter(self.head.clone())
     }
 
@@ -116,9 +112,7 @@ impl<'a, T> DoublyLinkedList<'a, T> {
     pub fn pop_back(&mut self) -> Result<T> {
         self.tail
             .take()
-            // If tail contained `None`, then the list is empty
             .ok_or(Error::EmptyList)
-            // Otherwise,
             .and_then(|weak| {
                 let old_tail = weak.to_strong()
                                    .expect(msg::ERR_INTERNAL_WEAK_UPGRADE_RACE);
@@ -201,19 +195,19 @@ impl<'a, T> DoublyLinkedList<'a, T> {
 }
 
 /// Idiomatic `Default` impl for types with parameterless constructors.
-impl<'a, T> Default for DoublyLinkedList<'a, T> {
+impl<T> Default for DoublyLinkedList<T> {
     fn default() -> Self {
         Self::new()
     }
 }
 
+/// Impl of total equality (marker trait) for `DoublyLinkedList`
+impl<T: Eq> Eq for DoublyLinkedList<T> {}
+
 /// Implementation of partial equality for `DoublyLinkedList`
-impl<'a, T> PartialEq for DoublyLinkedList<'a, T> {
+impl<T: PartialEq> PartialEq for DoublyLinkedList<T> {
     fn eq(&self, rhs: &Self) -> bool {
         self.head == rhs.head &&
         self.tail == rhs.tail
     }
 }
-
-/// Impl of total equality (marker trait) for `DoublyLinkedList`
-impl<'a, T> Eq for DoublyLinkedList<'a, T> {}

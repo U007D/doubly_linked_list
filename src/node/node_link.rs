@@ -8,40 +8,40 @@ use crate::{
     WeakLink,
 };
 #[derive(Debug)]
-pub struct NodeLink<'a, T>(pub(crate) Rc<RefCell<Node<'a, T>>>);
+pub struct NodeLink<T>(pub(crate) Rc<RefCell<Node<T>>>);
 
-impl<'a, T> NodeLink<'a, T> {
+impl<T> NodeLink<T> {
     #[inline]
-    pub(crate) fn new(node: Node<'a, T>) -> Self {
+    pub(crate) fn new(node: Node<T>) -> Self {
         Self(Rc::new(RefCell::new(node)))
     }
 
     #[inline]
-    pub(crate) fn from_strong(link: Rc<RefCell<Node<'a, T>>>) -> Self {
+    pub(crate) fn from_strong(link: Rc<RefCell<Node<T>>>) -> Self {
         Self(link)
     }
 
     #[inline]
-    pub(crate) fn to_weak(&self) -> WeakLink<'a, T> {
+    pub(crate) fn to_weak(&self) -> WeakLink<T> {
         WeakLink::from_weak(Rc::downgrade(&self.0))
     }
 }
 
-impl<'a, T> Clone for NodeLink<'a, T> {
+impl<T> Clone for NodeLink<T> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
 
-impl<'a, T> Deref for NodeLink<'a, T> {
-    type Target = Rc<RefCell<Node<'a, T>>>;
+impl<T> Deref for NodeLink<T> {
+    type Target = Rc<RefCell<Node<T>>>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<'a, T: PartialEq> PartialEq for NodeLink<'a, T> {
+impl<T: PartialEq> PartialEq for NodeLink<T> {
     fn eq(&self, rhs: &Self) -> bool {
         self == rhs
     }

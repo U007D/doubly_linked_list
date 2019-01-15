@@ -1,5 +1,5 @@
 #![warn(clippy::all)]
-#![allow(unsafe_code)] // Do not remove!  Explicitly change to #![allow(unsafe_code)] to use `unsafe` keyword.
+#![forbid(unsafe_code)] // Do not remove!  Explicitly change to #![allow(unsafe_code)] to use `unsafe` keyword.
 #![forbid(overflowing_literals)]
 #![deny(warnings)]
 // Uncomment before ship to reconcile use of possibly redundant crates and uncover possible debug remnants

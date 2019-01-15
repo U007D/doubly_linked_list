@@ -3,10 +3,10 @@ mod unit_tests;
 use crate::NodeLink;
 
 #[derive(Debug)]
-pub struct Iter<'a, T>(pub(super) Option<NodeLink<'a, T>>);
+pub struct Iter<T>(pub(super) Option<NodeLink<T>>);
 
-impl<'a, T> Iterator for Iter<'a, T> {
-    type Item = NodeLink<'a, T>;
+impl<T> Iterator for Iter<T> {
+    type Item = NodeLink<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.take()
@@ -17,7 +17,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
     }
 }
 
-impl<'a, T: PartialEq> PartialEq for Iter<'a, T> {
+impl<T: PartialEq> PartialEq for Iter<T> {
     fn eq(&self, rhs: &Self) -> bool {
         self.0 == rhs.0
     }

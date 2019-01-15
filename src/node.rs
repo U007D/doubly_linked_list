@@ -12,13 +12,13 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct Node<'a, T> {
-    pub(super) next: Option<NodeLink<'a, T>>,
-    pub(super) prev: Option<WeakLink<'a, T>>,
+pub struct Node<T> {
+    pub(super) next: Option<NodeLink<T>>,
+    pub(super) prev: Option<WeakLink<T>>,
     pub(super) data: T,
 }
 
-impl<'a, T> Node<'a, T> {
+impl<T> Node<T> {
     pub fn new(data: T) -> Self {
         Self {
             next: None,
@@ -28,7 +28,7 @@ impl<'a, T> Node<'a, T> {
     }
 }
 
-impl<'a, T> Deref for Node<'a, T> {
+impl<T> Deref for Node<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -36,13 +36,13 @@ impl<'a, T> Deref for Node<'a, T> {
     }
 }
 
-impl<'a, T: PartialEq> PartialEq for Node<'a, T> {
+impl<T> PartialEq for Node<T> {
     fn eq(&self, rhs: &Self) -> bool {
-        self.data == rhs.data
+        self as *const Node<T> == rhs as *const Node<T>
     }
 }
 
-impl<'a, T: PartialOrd> PartialOrd for Node<'a, T> {
+impl<T: PartialOrd> PartialOrd for Node<T> {
     fn partial_cmp(&self, rhs: &Self) -> Option<Ordering> {
         self.data.partial_cmp(&rhs.data)
     }
